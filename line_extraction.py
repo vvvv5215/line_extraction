@@ -15,31 +15,50 @@ def extract_lines(points, dist_threshold=0.02, min_points=18, max_iter=200):
             break
 
         idx = np.random.choice(len(remaining), size=2, replace=False)
-        p1, p2 = remaining[idx]
+        p1 = remaining[idx[0]]
+        p2 = remaining[idx[1]]
 
         a = p2[1] - p1[1]
         b = p1[0] - p2[0]
         c = p2[0]*p1[1] - p1[0]*p2[1]
         norm = math.hypot(a, b)
+
         if norm == 0:
             continue
-        distances = np.abs(a*remaining[:,0] + b*remaining[:,1] + c) / norm
 
-        inliers = remaining[distances < dist_threshold]
+        distances = []
+        for point in remaining:
+            x = point[0]
+            y = point[1]
+            distance = abs(a * x + b * y + c) / norm
+            distances.append(distance)
+
+        inliers = []
+        for i, distance in enumerate(distances):
+            if distance < dist_threshold:
+                inliers.append(remaining[i])
+        inliers = np.array(inliers)
+
         if len(inliers) < min_points:
             continue
 
-        x = inliers[:, 0]
-        y = inliers[:, 1]
-        A = np.vstack([x, np.ones(len(x))]).T
-        m, c_fit = np.linalg.lstsq(A, y, rcond=None)[0]
+        x_inliers = inliers[:, 0]
+        y_inliers = inliers[:, 1]
+        A = np.vstack([x_inliers, np.ones(len(x_inliers))]).T
+        m, c_fit = np.linalg.lstsq(A, y_inliers, rcond=None)[0]
 
-        x_min, x_max = np.min(x), np.max(x)
+        x_min = np.min(x_inliers)
+        x_max = np.max(x_inliers)
         p_start = np.array([x_min, m * x_min + c_fit])
         p_end = np.array([x_max, m * x_max + c_fit])
 
         lines.append(((m, c_fit), (p_start, p_end)))
-        remaining = remaining[distances >= dist_threshold]
+
+        new_remaining = []
+        for i, distance in enumerate(distances):
+            if distance >= dist_threshold:
+                new_remaining.append(remaining[i])
+        remaining = np.array(new_remaining)
 
     return lines
 
