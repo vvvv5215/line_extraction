@@ -107,7 +107,7 @@ def scan_callback(msg):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = rclpy.create_node('line_extractor_simple')
+    node = rclpy.create_node('line_extractor')
 
     marker_pub = node.create_publisher(Marker, '/visualization_markers', 10)
     scan_callback.marker_pub = marker_pub
